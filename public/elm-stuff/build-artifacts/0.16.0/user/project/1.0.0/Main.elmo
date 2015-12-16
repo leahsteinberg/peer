@@ -1,0 +1,22 @@
+Elm.Main = Elm.Main || {};
+Elm.Main.make = function (_elm) {
+   "use strict";
+   _elm.Main = _elm.Main || {};
+   if (_elm.Main.values) return _elm.Main.values;
+   var _U = Elm.Native.Utils.make(_elm),
+   $Basics = Elm.Basics.make(_elm),
+   $Debug = Elm.Debug.make(_elm),
+   $Graphics$Element = Elm.Graphics.Element.make(_elm),
+   $List = Elm.List.make(_elm),
+   $Maybe = Elm.Maybe.make(_elm),
+   $PeerClient = Elm.PeerClient.make(_elm),
+   $Result = Elm.Result.make(_elm),
+   $Signal = Elm.Signal.make(_elm),
+   $Task = Elm.Task.make(_elm);
+   var _op = {};
+   var incoming = $Signal.mailbox("null");
+   var main = A2($Signal.map,function (x) {    return $Graphics$Element.show(x);},incoming.signal);
+   var peer = $PeerClient.makePeer("r6pcbfr5ru1eb3xr");
+   var incomingPort = Elm.Native.Task.make(_elm).perform(A2($Task.andThen,peer,$PeerClient.serverUpdates(incoming.address)));
+   return _elm.Main.values = {_op: _op,peer: peer,incoming: incoming,main: main};
+};
