@@ -1,0 +1,18 @@
+<div id="anchor"></div>
+<script src="elm.js"></script>
+
+
+<script src= "Native/PeerClient.js" ></script>
+
+
+<script src="elm.js"></script>
+<script>
+  window.onload = function () {
+    console.log("elm native peer client ", Elm.Native.PeerClient);
+    var thing = document.getElementById("anchor");
+    console.log("show", thing);
+    Elm.embed(Elm.Testing, thing, {});
+};
+
+
+</script>
