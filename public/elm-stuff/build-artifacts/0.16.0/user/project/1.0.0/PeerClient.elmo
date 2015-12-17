@@ -13,8 +13,11 @@ Elm.PeerClient.make = function (_elm) {
    $Signal = Elm.Signal.make(_elm),
    $Task = Elm.Task.make(_elm);
    var _op = {};
+   var receive = $Native$PeerClient.receive;
    var serverUpdates = $Native$PeerClient.serverUpdates;
    var makePeer = $Native$PeerClient.makePeer;
+   var IntroPeer = function (a) {    return {ctor: "IntroPeer",_0: a};};
+   var Message = F2(function (a,b) {    return {ctor: "Message",_0: a,_1: b};});
    var Peer = {ctor: "Peer"};
-   return _elm.PeerClient.values = {_op: _op,makePeer: makePeer,serverUpdates: serverUpdates};
+   return _elm.PeerClient.values = {_op: _op,makePeer: makePeer,serverUpdates: serverUpdates,receive: receive};
 };

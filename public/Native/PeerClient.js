@@ -2,8 +2,9 @@ Elm.Native.PeerClient = {};
 
 Elm.Native.PeerClient.make = function(localRuntime) {
 
-  var connections;
+  var connections = {};
   var receive_address;
+  var server_address;
 
   localRuntime.Native = localRuntime.Native || {};
   localRuntime.Native.PeerClient = localRuntime.Native.PeerClient || {};
@@ -25,7 +26,8 @@ Elm.Native.PeerClient.make = function(localRuntime) {
         peer = peer || new Peer("coolpeer", {host: "localhost", path: '/peerapp', debug: 2});
         
         peer.on('connection', function(conn) {
-          console.log("got a connection from", conn);
+          console.log("1 got a connection from", conn);
+          open_connection(conn.peer, conn);
         });
 
         if (peer.disconnected) {
@@ -39,6 +41,7 @@ Elm.Native.PeerClient.make = function(localRuntime) {
 
   function serverUpdates(signal_address, peer) {
       return Task.asyncFunction(function(callback){
+        server_address = signal_address;
           peer.on('open', function(id) {
             console.log("My peer ID is: " + id);
             if (typeof id !== "string") {id = JSON.stringify(id)|| "null";}
@@ -50,7 +53,7 @@ Elm.Native.PeerClient.make = function(localRuntime) {
       });
   } 
 
-  function receive(signal_address peer) {
+  function receive(signal_address, peer) {
     return Task.asyncFunction(function(callback){
 
       /* save the address of the mailbox where we can send back stuff!*/
@@ -75,9 +78,12 @@ Elm.Native.PeerClient.make = function(localRuntime) {
   /* H E L P E R   F U N C S */
 
   function open_connection(fellow_peer_id, conn) {
+    //console.log("opening a connection with: ", fellow_peer_id, " -- ", conn);
+    Task.perform(server_address._0(fellow_peer_id));
+
 
     /* save the connection so we can send stuff back */
-    connections.fellow_peer_id = conn;
+    connections[fellow_peer_id] = conn;
     conn.on('data', function(data) {
       console.log('Received, from: ', fellow_peer_id, " -- ", data);
       receive_data(fellow_peer_id, data);
@@ -89,7 +95,7 @@ Elm.Native.PeerClient.make = function(localRuntime) {
     if (data.ctor === "IntroPeer") {
       add_peer(peer_message);
     }
-    Task.perform(receive_address.0(data));
+    Task.perform(receive_address._0(data));
   }
 
 
@@ -126,8 +132,8 @@ Elm.Native.PeerClient.make = function(localRuntime) {
 
 localRuntime.Native.PeerClient.values = {
   makePeer: makePeer,
-  serverUpdates: F2(serverUpdates)
-
+  serverUpdates: F2(serverUpdates),
+  receive: F2(receive)
 }
 
 return localRuntime.Native.PeerClient.values;

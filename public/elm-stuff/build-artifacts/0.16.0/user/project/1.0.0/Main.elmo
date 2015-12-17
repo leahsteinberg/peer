@@ -14,9 +14,11 @@ Elm.Main.make = function (_elm) {
    $Signal = Elm.Signal.make(_elm),
    $Task = Elm.Task.make(_elm);
    var _op = {};
+   var incomingPeer = $Signal.mailbox("null");
+   var main = A2($Signal.map,function (x) {    return $Graphics$Element.show(x);},incomingPeer.signal);
    var incoming = $Signal.mailbox("null");
-   var main = A2($Signal.map,function (x) {    return $Graphics$Element.show(x);},incoming.signal);
    var peer = $PeerClient.makePeer("r6pcbfr5ru1eb3xr");
+   var incomingPeerPort = Elm.Native.Task.make(_elm).perform(A2($Task.andThen,peer,$PeerClient.receive(incomingPeer.address)));
    var incomingPort = Elm.Native.Task.make(_elm).perform(A2($Task.andThen,peer,$PeerClient.serverUpdates(incoming.address)));
-   return _elm.Main.values = {_op: _op,peer: peer,incoming: incoming,main: main};
+   return _elm.Main.values = {_op: _op,peer: peer,incoming: incoming,incomingPeer: incomingPeer,main: main};
 };

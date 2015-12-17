@@ -5425,6 +5425,10 @@ Elm.Native.PeerClient = {};
 
 Elm.Native.PeerClient.make = function(localRuntime) {
 
+  var connections = {};
+  var receive_address;
+  var server_address;
+
   localRuntime.Native = localRuntime.Native || {};
   localRuntime.Native.PeerClient = localRuntime.Native.PeerClient || {};
   
@@ -5434,49 +5438,125 @@ Elm.Native.PeerClient.make = function(localRuntime) {
 
   var Signal = Elm.Native.Signal.make(localRuntime);
   var Task = Elm.Native.Task.make(localRuntime);
-  var Utils = Elm.Native.Utils.make (localRuntime);
+  var Utils = Elm.Native.Utils.make(localRuntime);
 
 
   function makePeer(serverkey) {
     var peer;
     return Task.asyncFunction(function(callback) {
+
         //peer = peer || new Peer({key: serverkey});
         peer = peer || new Peer("coolpeer", {host: "localhost", path: '/peerapp', debug: 2});
-        //peer = peer || new Peer({key: serverkey});
-
-        if (! peer.disconnected) {
-            callback(Task.succeed(peer));
-        } else {
-            peer.reconnect();
-            callback(Task.succeed(peer));
         
+        peer.on('connection', function(conn) {
+          console.log("1 got a connection from", conn);
+          open_connection(conn.peer, conn);
+        });
+
+        if (peer.disconnected) {
+            
+            peer.reconnect();
         }
+        callback(Task.succeed(peer));
+        
     });
   }
 
   function serverUpdates(signal_address, peer) {
       return Task.asyncFunction(function(callback){
+        server_address = signal_address;
           peer.on('open', function(id) {
             console.log("My peer ID is: " + id);
             if (typeof id !== "string") {id = JSON.stringify(id)|| "null";}
             Task.perform(signal_address._0(id));
+            // this is how we send back new values to the Mailbox!!
         });
           callback(Task.succeed(Utils.Tuple0));
+          // this is what we call to "end" this function call, sending back ()
       });
   } 
 
-  // function receive(signal_address, peer) {
-  //   return 
-  // }
+  function receive(signal_address, peer) {
+    return Task.asyncFunction(function(callback){
+
+      /* save the address of the mailbox where we can send back stuff!*/
+      receive_address = signal_address;
+      callback(Task.succeed(Utils.Tuple0));
+    });
+  }
+
+  function emit(peer_message, peer) {
+    return Task.asyncFunction(function(callback) {
+      if (peer_message.ctor === "IntroPeer") {
+        add_peer(peer_message);
+      }
+      else if (peer_message.ctor === "Message") {
+
+      }
+      callback(Task.succeed(Utils.Tuple0));
+    });
+  }
 
 
+  /* H E L P E R   F U N C S */
+
+  function open_connection(fellow_peer_id, conn) {
+    //console.log("opening a connection with: ", fellow_peer_id, " -- ", conn);
+    Task.perform(server_address._0(fellow_peer_id));
+
+
+    /* save the connection so we can send stuff back */
+    connections[fellow_peer_id] = conn;
+    conn.on('data', function(data) {
+      console.log('Received, from: ', fellow_peer_id, " -- ", data);
+      receive_data(fellow_peer_id, data);
+    });
+  }
+
+
+  function receive_data(fellow_peer_id, data) {
+    if (data.ctor === "IntroPeer") {
+      add_peer(peer_message);
+    }
+    Task.perform(receive_address._0(data));
+  }
+
+
+  function add_peer(peer_message) {
+
+    var fellow_peer_id = peer_message._0;
+    /* open a connection to this peer */
+    var conn = peer.connect(fellow_peer_id);
+      
+    conn.on('open', function(){
+      open_connection(fellow_peer_id, conn);
+    });
+  }
+
+
+
+
+
+    // when you get an ADD PEER update:
+    // var conn = peer.connect('PEER ID!!!');// SAVE THIS!!!!!
+    // conn.on('open,' function()) {
+    // I think I need to call receive and put the 
+    // OR I DEFINE A NEW FUNCTION IS THE GET STUFF BACK FUNCTION
+    // AND I CALL IT?
+    // I NEED TO MAKE IT THAT THE SINGLE call to receive makes sure that ALL
+    // connections' data.on goes back as an asnwer to that response.
+
+
+    //
+    //
+    //
 
 
 
 localRuntime.Native.PeerClient.values = {
   makePeer: makePeer,
-  serverUpdates: F2(serverUpdates)
-
+  serverUpdates: F2(serverUpdates),
+  receive: F2(receive)
 }
 
 return localRuntime.Native.PeerClient.values;
@@ -5504,10 +5584,13 @@ Elm.PeerClient.make = function (_elm) {
    $Signal = Elm.Signal.make(_elm),
    $Task = Elm.Task.make(_elm);
    var _op = {};
+   var receive = $Native$PeerClient.receive;
    var serverUpdates = $Native$PeerClient.serverUpdates;
    var makePeer = $Native$PeerClient.makePeer;
+   var IntroPeer = function (a) {    return {ctor: "IntroPeer",_0: a};};
+   var Message = F2(function (a,b) {    return {ctor: "Message",_0: a,_1: b};});
    var Peer = {ctor: "Peer"};
-   return _elm.PeerClient.values = {_op: _op,makePeer: makePeer,serverUpdates: serverUpdates};
+   return _elm.PeerClient.values = {_op: _op,makePeer: makePeer,serverUpdates: serverUpdates,receive: receive};
 };
 Elm.Main = Elm.Main || {};
 Elm.Main.make = function (_elm) {
@@ -5525,9 +5608,11 @@ Elm.Main.make = function (_elm) {
    $Signal = Elm.Signal.make(_elm),
    $Task = Elm.Task.make(_elm);
    var _op = {};
+   var incomingPeer = $Signal.mailbox("null");
+   var main = A2($Signal.map,function (x) {    return $Graphics$Element.show(x);},incomingPeer.signal);
    var incoming = $Signal.mailbox("null");
-   var main = A2($Signal.map,function (x) {    return $Graphics$Element.show(x);},incoming.signal);
    var peer = $PeerClient.makePeer("r6pcbfr5ru1eb3xr");
+   var incomingPeerPort = Elm.Native.Task.make(_elm).perform(A2($Task.andThen,peer,$PeerClient.receive(incomingPeer.address)));
    var incomingPort = Elm.Native.Task.make(_elm).perform(A2($Task.andThen,peer,$PeerClient.serverUpdates(incoming.address)));
-   return _elm.Main.values = {_op: _op,peer: peer,incoming: incoming,main: main};
+   return _elm.Main.values = {_op: _op,peer: peer,incoming: incoming,incomingPeer: incomingPeer,main: main};
 };

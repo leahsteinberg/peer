@@ -1,11 +1,11 @@
-module PeerClient (makePeer, serverUpdates) where
+module PeerClient (makePeer, serverUpdates, receive) where
          
 
 {-| a module for working with [Peer.js](peerjs.com)
 
 #Creating a peer
 make a peer
-@docs makePeer, serverUpdates
+@docs makePeer, serverUpdates, receive
 -}
 import Task
 import Native.PeerClient
@@ -35,6 +35,11 @@ makePeer = Native.PeerClient.makePeer
 serverUpdates : Signal.Address String -> Peer -> Task.Task x ()
 serverUpdates = Native.PeerClient.serverUpdates
 
+
+{-| Getting updates from other peers
+-}
+receive : Signal.Address String -> Peer -> Task.Task x ()
+receive = Native.PeerClient.receive
 
 
 
