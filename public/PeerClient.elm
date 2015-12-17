@@ -14,6 +14,16 @@ import Native.PeerClient
 -}
 type Peer = Peer
 
+type alias PeerId = String
+
+{-| the types of communicating to and from a Peer
+    IntroPeer is what you get when the server or another peer wants you
+    to know about a peer, and it's what you tell your peer when you know about a new peer
+-}
+type PeerUpdate a = Message PeerId a | IntroPeer PeerId
+
+
+
 {-| Make a peer!
 -}
 makePeer : String -> Task.Task x Peer

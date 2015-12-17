@@ -5456,20 +5456,20 @@ Elm.Native.PeerClient.make = function(localRuntime) {
 
   function serverUpdates(signal_address, peer) {
       return Task.asyncFunction(function(callback){
-        console.log("the peer is", peer);
-
           peer.on('open', function(id) {
             console.log("My peer ID is: " + id);
             if (typeof id !== "string") {id = JSON.stringify(id)|| "null";}
-            //Task.perform(signal_address._0(id));
-
-        
+            Task.perform(signal_address._0(id));
         });
-          //callback(Task.succeed(Utils.Tuple0));
-
+          callback(Task.succeed(Utils.Tuple0));
       });
-
   } 
+
+  // function receive(signal_address, peer) {
+  //   return 
+  // }
+
+
 
 
 

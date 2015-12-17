@@ -1,0 +1,29 @@
+<script src="//code.jquery.com/jquery-1.11.3.min.js"></script>
+<script src="//code.jquery.com/jquery-migrate-1.2.1.min.js"></script>
+<script src="http://cdn.peerjs.com/0.3/peer.js"></script>
+
+
+
+<script>
+
+var url = window.location.href;
+
+var peer_name = url.substr(url.lastIndexOf('/') + 1);
+
+var peer = new Peer(peer_name, {host: "localhost", path: '/peerapp', debug: 2});
+
+var conn = peer.connect("coolpeer");
+
+conn.on('open', function() {
+  // Receive messages
+  conn.on('data', function(data) {
+    console.log('Received', data);
+  });
+
+  // Send messages
+  conn.send('Hello!');
+});
+
+</script>
+
+
